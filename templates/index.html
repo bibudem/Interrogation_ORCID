@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Explorateur ORCID — Accueil{% endblock %}
+
+{% block content %}
+<div class="fade-up" style="text-align:center; padding: 3rem 0 2rem;">
+    <p style="font-size:.8rem; font-weight:500; text-transform:uppercase; letter-spacing:.15em; color:var(--accent); margin-bottom:1rem;">
+        Interface d'exploration
+    </p>
+    <h1>Explorateur<br><em style="font-style:italic; color:var(--ink-soft);">ORCID API</em></h1>
+    <p style="max-width:480px; margin:1.25rem auto 2.5rem; font-size:1rem;">
+        Consultez les profils de chercheurs et explorez leurs publications directement
+        depuis l'API publique ORCID — environnement sandbox.
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="/profil" class="btn btn-primary">
+            → Consulter un profil
+        </a>
+        <a href="/recherche" class="btn btn-ghost">
+            Rechercher des chercheurs
+        </a>
+    </div>
+</div>
+
+<hr>
+
+<div class="fade-up-delay" style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:2rem;">
+    <div class="card">
+        <h3>Consulter un profil</h3>
+        <p style="margin-bottom:1.25rem;">
+            Entrez un identifiant ORCID pour afficher le profil complet d'un chercheur :
+            nom, biographie, mots-clés, affiliations et liste de publications.
+        </p>
+        <form action="/profil" method="POST" style="display:flex; gap:.75rem;">
+            <input type="text" name="orcid_id" placeholder="{{ demo_orcid }}" style="flex:1; font-family:'DM Mono',monospace; font-size:.85rem;">
+            <button type="submit" class="btn btn-primary">Voir</button>
+        </form>
+        <p style="margin-top:.75rem; font-size:.78rem; color:var(--ink-muted);">
+            Essayez le profil de démonstration : <code>{{ demo_orcid }}</code>
+        </p>
+    </div>
+
+    <div class="card">
+        <h3>Rechercher</h3>
+        <p style="margin-bottom:1.25rem;">
+            Trouvez des chercheurs par nom, institution, mot-clé ou identifiant.
+            Utilise la syntaxe Solr de l'API ORCID.
+        </p>
+        <a href="/recherche" class="btn btn-ghost" style="width:100%; justify-content:center;">
+            → Aller à la recherche
+        </a>
+        <p style="margin-top:.75rem; font-size:.78rem; color:var(--ink-muted);">
+            Supporte la recherche par institution, DOI, courriel, et plus.
+        </p>
+    </div>
+</div>
+
+<div class="fade-up-delay-2 alert alert-info" style="margin-top:2rem;">
+    <span>ℹ</span>
+    <span>
+        Cette application utilise l'<strong>API publique ORCID sandbox</strong>.
+        Les données du sandbox peuvent différer de la production — certains profils
+        n'existent que dans l'un ou l'autre environnement.
+    </span>
+</div>
+{% endblock %}

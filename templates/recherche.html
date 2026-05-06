@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Recherche ORCID{% endblock %}
+
+{% block extra_style %}
+<style>
+.search-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+    transition: background .1s;
+}
+.result-row:last-child { border-bottom: none; }
+.result-row:hover { background: var(--paper-2); border-radius: var(--radius); }
+.result-orcid {
+    font-family: 'DM Mono', monospace;
+    font-size: .85rem;
+    color: var(--ink);
+}
+.result-actions { display: flex; gap: .5rem; }
+.query-display {
+    font-family: 'DM Mono', monospace;
+    font-size: .8rem;
+    background: var(--ink);
+    color: #a8f0c6;
+    padding: .6rem 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    word-break: break-all;
+}
+.total-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 500;
+    padding: .2rem .7rem;
+    border-radius: 20px;
+    margin-left: .75rem;
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="fade-up">
+    <h1>Recherche</h1>
+    <p style="margin-bottom:2rem;">Trouvez des chercheurs par nom, institution ou mot-clé. Vous pouvez combiner plusieurs critères.</p>
+</div>
+
+<div class="card fade-up" style="margin-bottom:2rem;">
+    <form action="/recherche" method="POST">
+        <div class="search-grid">
+            <div class="form-group">
+                <label for="family_name">Nom de famille</label>
+                <input type="text" id="family_name" name="family_name"
+                    value="{{ form_data.get('family_name', '') }}"
+                    placeholder="ex. : Dupont">
+            </div>
+            <div class="form-group">
+                <label for="given_name">Prénom</label>
+                <input type="text" id="given_name" name="given_name"
+                    value="{{ form_data.get('given_name', '') }}"
+                    placeholder="ex. : Marie">
+            </div>
+            <div class="form-group">
+                <label for="institution">Institution</label>
+                <input type="text" id="institution" name="institution"
+                    value="{{ form_data.get('institution', '') }}"
+                    placeholder='ex. : Université de Montréal'>
+            </div>
+            <div class="form-group">
+                <label for="keyword">Mot-clé</label>
+                <input type="text" id="keyword" name="keyword"
+                    value="{{ form_data.get('keyword', '') }}"
+                    placeholder="ex. : bibliométrie">
+            </div>
+            <div class="form-group">
+                <label for="email">Courriel ou domaine</label>
+                <input type="text" id="email" name="email"
+                    value="{{ form_data.get('email', '') }}"
+                    placeholder="ex. : *@umontreal.ca ou j.dupont@mcgill.ca">
+            </div>
+            <div class="form-group">
+                <label for="orcid_id">Identifiant ORCID</label>
+                <input type="text" id="orcid_id" name="orcid_id"
+                    value="{{ form_data.get('orcid_id', '') }}"
+                    placeholder="0000-0000-0000-0000"
+                    style="font-family:'DM Mono',monospace;">
+            </div>
+            <div class="form-group">
+                <label for="free_query">Requête Solr libre</label>
+                <input type="text" id="free_query" name="free_query"
+                    value="{{ form_data.get('free_query', '') }}"
+                    placeholder='ex. : doi-self:10.1000/xyz'>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:.75rem; margin-top:.5rem; flex-wrap:wrap; align-items:center;">
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+            <a href="/recherche" class="btn btn-ghost">Effacer</a>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:.75rem;">
+                <span style="font-size:.75rem; color:var(--ink-muted);">Export UdeM :</span>
+                <a href="/export-umontreal"
+                   class="btn btn-ghost"
+                   style="font-size:.8rem; border-color:var(--accent); color:var(--accent);"
+                   title="Télécharge un CSV de tous les profils ORCID avec un courriel @umontreal.ca">
+                    ⬇ CSV @umontreal.ca
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="alert alert-info fade-up" style="margin-bottom:1.5rem; font-size:.82rem;">
+    <span>💡</span>
+    <span>
+        <strong>Export UdeM :</strong> le bouton « CSV @umontreal.ca » récupère automatiquement
+        tous les profils ORCID dont le courriel est public et se termine par <code>@umontreal.ca</code>.
+        Le téléchargement peut prendre quelques minutes selon le nombre de profils trouvés.
+        Fonctionne en <strong>Production</strong> pour des données réelles.
+    </span>
+</div>
+
+<!-- Erreur -->
+{% if error %}
+<div class="alert alert-error fade-up">
+    <span>⚠</span>
+    <span>{{ error }}</span>
+</div>
+{% endif %}
+
+<!-- Résultats -->
+{% if results is not none %}
+<div class="fade-up">
+
+    {% if query_str %}
+    <div class="query-display">$ q={{ query_str }}</div>
+    {% endif %}
+
+    <div style="display:flex; align-items:center; margin-bottom:1rem;">
+        <h2 style="margin:0;">Résultats
+            <span class="total-badge">{{ total }} trouvé{{ 's' if total > 1 else '' }}</span>
+        </h2>
+    </div>
+
+    {% if results %}
+    <div class="card">
+        {% for r in results %}
+        <div class="result-row">
+            <div>
+                <div class="result-orcid">{{ r.orcid_id }}</div>
+            </div>
+            <div class="result-actions">
+                <a href="/profil?orcid={{ r.orcid_id }}"
+                   onclick="document.querySelector('#profil-form').orcid_id.value='{{ r.orcid_id }}'"
+                   class="btn btn-ghost" style="font-size:.78rem; padding:.3rem .8rem;"
+                   hx-boost="false">
+                    Voir profil →
+                </a>
+                <form action="/profil" method="POST" style="display:inline;">
+                    <input type="hidden" name="orcid_id" value="{{ r.orcid_id }}">
+                    <button type="submit" class="btn btn-primary" style="font-size:.78rem; padding:.3rem .8rem;">
+                        Charger ↗
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if total > results|length %}
+        <p style="text-align:center; padding:1rem; font-size:.82rem; color:var(--ink-muted);">
+            Affichage des 25 premiers résultats sur {{ total }}.
+        </p>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <div class="alert alert-info">
+        <span>ℹ</span>
+        <span>Aucun résultat pour cette requête dans le sandbox. Essayez avec des critères moins restrictifs.</span>
+    </div>
+    {% endif %}
+
+</div>
+{% endif %}
+
+<!-- Aide -->
+{% if results is none %}
+<div class="fade-up-delay">
+    <h3>Exemples de recherches</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:.75rem;">
+        <div class="card" style="padding:1.25rem;">
+            <p style="font-size:.82rem; color:var(--ink-muted); margin-bottom:.5rem;">Chercheur par nom</p>
+            <code style="font-size:.8rem;">family-name:Smith AND given-names:John</code>
+        </div>
+        <div class="card" style="padding:1.25rem;">
+            <p style="font-size:.82rem; color:var(--ink-muted); margin-bottom:.5rem;">Par institution</p>
+            <code style="font-size:.8rem;">affiliation-org-name:"McGill University"</code>
+        </div>
+        <div class="card" style="padding:1.25rem;">
+            <p style="font-size:.82rem; color:var(--ink-muted); margin-bottom:.5rem;">Par DOI publié</p>
+            <code style="font-size:.8rem;">doi-self:10.1000/xyz123</code>
+        </div>
+        <div class="card" style="padding:1.25rem;">
+            <p style="font-size:.82rem; color:var(--ink-muted); margin-bottom:.5rem;">Par mot-clé de profil</p>
+            <code style="font-size:.8rem;">keyword:bibliometrics</code>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

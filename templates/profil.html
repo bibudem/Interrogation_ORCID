@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+{% block title %}Profil ORCID{% if data %} — {{ data.name }}{% endif %}{% endblock %}
+
+{% block extra_style %}
+<style>
+/* ── Layout profil ── */
+.profil-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+.sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ── Section cards ── */
+.section-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+.section-card-header {
+    padding: .75rem 1.25rem;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.section-card-header h3 {
+    margin: 0;
+    font-size: .72rem;
+}
+.section-card-body { padding: 1rem 1.25rem; }
+
+/* ── Identity header ── */
+.identity-header {
+    background: var(--ink);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1.75rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+}
+.identity-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    line-height: 1.15;
+    margin-bottom: .25rem;
+}
+.identity-orcid {
+    font-family: 'DM Mono', monospace;
+    font-size: .82rem;
+    color: rgba(255,255,255,.55);
+    margin-bottom: 1rem;
+}
+.identity-orcid a { color: var(--accent-2); text-decoration: none; }
+.identity-orcid a:hover { text-decoration: underline; }
+.identity-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .75rem;
+}
+
+/* ── Tags ── */
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .2rem .65rem;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 500;
+}
+.tag-dark  { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); }
+.tag-light { background: var(--paper-2); color: var(--ink-soft); border: 1px solid var(--border); }
+.tag-green { background: var(--accent-3); color: var(--accent); border: 1px solid var(--accent-2); }
+.tag-blue  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.tag-amber { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+/* ── Data rows ── */
+.data-row {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: .88rem;
+}
+.data-row:last-child { border-bottom: none; padding-bottom: 0; }
+.data-row:first-child { padding-top: 0; }
+.data-label {
+    flex-shrink: 0;
+    width: 110px;
+    font-size: .72rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ink-muted);
+    padding-top: .1rem;
+}
+.data-value { flex: 1; color: var(--ink-soft); line-height: 1.5; }
+.data-value a { color: var(--accent); text-decoration: none; }
+.data-value a:hover { text-decoration: underline; }
+
+/* ── Email badges ── */
+.email-row { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.email-addr { font-family: 'DM Mono', monospace; font-size: .82rem; }
+
+/* ── Works ── */
+.work-item {
+    padding: .85rem 0;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 52px;
+    gap: .5rem;
+}
+.work-item:last-child { border-bottom: none; padding-bottom: 0; }
+.work-title { font-size: .9rem; font-weight: 400; color: var(--ink); line-height: 1.4; margin-bottom: .3rem; }
+.work-title a { color: var(--ink); text-decoration: none; }
+.work-title a:hover { color: var(--accent); }
+.work-meta { font-size: .75rem; color: var(--ink-muted); display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+.work-year { font-family: 'DM Mono', monospace; font-size: .82rem; font-weight: 500; color: var(--ink-soft); text-align: right; }
+.type-badge {
+    font-size: .65rem; padding: .15rem .45rem; border-radius: 20px;
+    background: var(--paper-3); color: var(--ink-soft);
+    text-transform: capitalize; white-space: nowrap;
+}
+
+/* ── Timeline (emplois/formations) ── */
+.timeline-item {
+    padding: .75rem 0 .75rem 1rem;
+    border-left: 2px solid var(--border);
+    margin-left: .25rem;
+    position: relative;
+}
+.timeline-item::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    position: absolute;
+    left: -5px; top: 1rem;
+}
+.timeline-item:last-child { border-left-color: transparent; }
+.timeline-org { font-weight: 500; font-size: .9rem; color: var(--ink); }
+.timeline-role { font-size: .82rem; color: var(--ink-soft); margin-top: .15rem; }
+.timeline-dates { font-family: 'DM Mono', monospace; font-size: .72rem; color: var(--ink-muted); margin-top: .2rem; }
+
+/* ── Export bar ── */
+.export-bar {
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .85rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.export-bar-label { font-size: .78rem; color: var(--ink-muted); font-weight: 500; }
+
+/* ── Stats row ── */
+.stats-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+.stat-box {
+    flex: 1;
+    text-align: center;
+    padding: .85rem;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+.stat-number { font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--ink); line-height: 1; }
+.stat-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-muted); margin-top: .3rem; }
+
+/* ── Ext ID chips ── */
+.ext-id-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .3rem .75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--paper);
+    font-size: .8rem;
+    margin: .2rem;
+}
+.ext-id-chip .type { font-family: 'DM Mono', monospace; font-size: .7rem; color: var(--ink-muted); }
+.ext-id-chip a { color: var(--ink); text-decoration: none; font-weight: 500; }
+.ext-id-chip a:hover { color: var(--accent); }
+
+/* ── Empty state ── */
+.empty { font-size: .82rem; color: var(--ink-muted); font-style: italic; padding: .5rem 0; }
+
+/* ── Note banner ── */
+.note-banner {
+    font-size: .75rem;
+    color: var(--ink-muted);
+    background: var(--paper-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .5rem .85rem;
+    margin-top: .75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Formulaire de saisie -->
+<div class="fade-up" style="margin-bottom:1.75rem;">
+    <h1>Profil chercheur</h1>
+    <p style="margin-bottom:1.25rem;">Entrez un identifiant ORCID pour afficher le profil complet.</p>
+    <form action="/profil" method="POST" style="display:flex; gap:.75rem; max-width:560px;">
+        <input type="text" name="orcid_id"
+            value="{{ orcid_id or '' }}"
+            placeholder="0000-0000-0000-0000"
+            style="flex:1; font-family:'DM Mono',monospace;">
+        <button type="submit" class="btn btn-primary">Charger</button>
+        <a href="/profil" class="btn btn-ghost">Effacer</a>
+    </form>
+    <p style="font-size:.75rem; color:var(--ink-muted); margin-top:.5rem;">
+        Profil démo : <code>0000-0002-1825-0097</code>
+    </p>
+</div>
+
+<!-- Erreur -->
+{% if error %}
+<div class="alert alert-error fade-up"><span>⚠</span><span>{{ error }}</span></div>
+{% endif %}
+
+<!-- ── Profil complet ── -->
+{% if data %}
+<div class="fade-up">
+
+    <!-- En-tête identité -->
+    <div class="identity-header">
+        <div class="identity-name">{{ data.name }}</div>
+        {% if data.other_names %}
+        <div style="font-size:.82rem; color:rgba(255,255,255,.5); margin-bottom:.4rem;">
+            aussi connu comme : {{ data.other_names | join(' · ') }}
+        </div>
+        {% endif %}
+        <div class="identity-orcid">
+            <a href="{{ data.orcid_url }}" target="_blank">{{ data.orcid_url }} ↗</a>
+        </div>
+        <div class="identity-meta">
+            {% for addr in data.addresses %}
+            <span class="tag tag-dark">🌍 {{ addr.country }}</span>
+            {% endfor %}
+            {% for kw in data.keywords[:10] %}
+            <span class="tag tag-dark">{{ kw }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Barre d'export -->
+    <div class="export-bar">
+        <span class="export-bar-label">Exporter ce profil :</span>
+        <a href="/{{ data.orcid_id }}/export-json-page" style="display:none"></a>
+        <a href="/profil/{{ data.orcid_id }}/export-json"
+           class="btn btn-ghost"
+           style="font-size:.8rem; padding:.35rem .9rem; border-color:var(--accent); color:var(--accent);">
+            ⬇ JSON complet
+        </a>
+        <a href="/api/profil/{{ data.orcid_id }}" target="_blank"
+           class="btn btn-ghost"
+           style="font-size:.8rem; padding:.35rem .9rem;">
+            { } JSON brut ORCID ↗
+        </a>
+        <span style="font-size:.72rem; color:var(--ink-muted); margin-left:auto;">
+            Données publiques via API ORCID {{ env_info.label }}
+        </span>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-box">
+            <div class="stat-number">{{ data.works_count }}</div>
+            <div class="stat-label">publications</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ data.affiliations | length }}</div>
+            <div class="stat-label">emplois</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ data.educations | length }}</div>
+            <div class="stat-label">formations</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ data.fundings | length }}</div>
+            <div class="stat-label">financements</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ data.external_identifiers | length }}</div>
+            <div class="stat-label">identifiants ext.</div>
+        </div>
+    </div>
+
+    <div class="profil-grid">
+
+        <!-- ── Colonne gauche : données d'identification ── -->
+        <div class="sidebar">
+
+            <!-- Coordonnées -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h3>Coordonnées &amp; contact</h3>
+                </div>
+                <div class="section-card-body">
+                    {% if data.emails %}
+                    {% for e in data.emails %}
+                    <div class="data-row">
+                        <div class="data-label">
+                            {% if e.primary %}Courriel principal{% else %}Courriel{% endif %}
+                        </div>
+                        <div class="data-value">
+                            <div class="email-row">
+                                <span class="email-addr">
+                                    <a href="mailto:{{ e.email }}">{{ e.email }}</a>
+                                </span>
+                                {% if e.primary %}<span class="tag tag-green" style="font-size:.65rem;">principal</span>{% endif %}
+                                {% if e.verified %}<span class="tag tag-blue" style="font-size:.65rem;">vérifié</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty">Aucun courriel public</p>
+                    {% endif %}
+
+                    {% if data.addresses %}
+                    {% for addr in data.addresses %}
+                    <div class="data-row">
+                        <div class="data-label">Pays</div>
+                        <div class="data-value">{{ addr.country }}</div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Identifiants externes -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h3>Identifiants externes</h3>
+                </div>
+                <div class="section-card-body">
+                    {% if data.external_identifiers %}
+                    <div style="display:flex; flex-wrap:wrap; gap:.15rem; margin: -.2rem;">
+                        {% for ei in data.external_identifiers %}
+                        <div class="ext-id-chip">
+                            <span class="type">{{ ei.type }}</span>
+                            {% if ei.url %}
+                            <a href="{{ ei.url }}" target="_blank">{{ ei.value }} ↗</a>
+                            {% else %}
+                            <span style="font-weight:500;">{{ ei.value }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="note-banner" style="margin-top:.75rem;">
+                        Scopus Author ID, ResearcherID, Loop, ISNI, etc.
+                    </div>
+                    {% else %}
+                    <p class="empty">Aucun identifiant externe déclaré</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Présence en ligne -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h3>Présence en ligne</h3>
+                </div>
+                <div class="section-card-body">
+                    {% if data.researcher_urls %}
+                    {% for u in data.researcher_urls %}
+                    <div class="data-row">
+                        <div class="data-label">{{ u.name or 'Site' }}</div>
+                        <div class="data-value">
+                            <a href="{{ u.url }}" target="_blank">
+                                {{ u.url | truncate(38, true, '…') }} ↗
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty">Aucun site web déclaré</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Biographie -->
+            {% if data.biography %}
+            <div class="section-card">
+                <div class="section-card-header"><h3>Biographie</h3></div>
+                <div class="section-card-body">
+                    <p style="font-size:.85rem; line-height:1.65; color:var(--ink-soft);">
+                        {{ data.biography }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ── Colonne droite : parcours & publications ── -->
+        <div>
+
+            <!-- Affiliations / emplois -->
+            <div class="section-card" style="margin-bottom:1.25rem;">
+                <div class="section-card-header">
+                    <h3>Emplois &amp; affiliations</h3>
+                    <span class="tag tag-light">{{ data.affiliations | length }}</span>
+                </div>
+                <div class="section-card-body">
+                    {% if data.affiliations %}
+                    {% for a in data.affiliations %}
+                    <div class="timeline-item">
+                        <div class="timeline-org">{{ a.organization }}</div>
+                        <div class="timeline-role">
+                            {% if a.role %}{{ a.role }}{% endif %}
+                            {% if a.department %} · <em>{{ a.department }}</em>{% endif %}
+                        </div>
+                        {% if a.start_year %}
+                        <div class="timeline-dates">{{ a.start_year }} – {{ a.end_year }}</div>
+                        {% endif %}
+                        {% if a.org_ids %}
+                        <div style="margin-top:.3rem;">
+                            {% for oid in a.org_ids %}
+                            <span class="tag tag-amber" style="font-size:.65rem;">{{ oid.type }}: {{ oid.value }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty">Aucune affiliation publique</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Formations -->
+            <div class="section-card" style="margin-bottom:1.25rem;">
+                <div class="section-card-header">
+                    <h3>Formation académique</h3>
+                    <span class="tag tag-light">{{ data.educations | length }}</span>
+                </div>
+                <div class="section-card-body">
+                    {% if data.educations %}
+                    {% for e in data.educations %}
+                    <div class="timeline-item">
+                        <div class="timeline-org">{{ e.organization }}</div>
+                        <div class="timeline-role">
+                            {% if e.degree %}{{ e.degree }}{% endif %}
+                            {% if e.department %} · <em>{{ e.department }}</em>{% endif %}
+                        </div>
+                        {% if e.start_year or e.end_year %}
+                        <div class="timeline-dates">
+                            {% if e.start_year %}{{ e.start_year }}{% endif %}
+                            {% if e.end_year %} – {{ e.end_year }}{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty">Aucune formation déclarée</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Financements -->
+            {% if data.fundings %}
+            <div class="section-card" style="margin-bottom:1.25rem;">
+                <div class="section-card-header">
+                    <h3>Financements &amp; subventions</h3>
+                    <span class="tag tag-light">{{ data.fundings | length }}</span>
+                </div>
+                <div class="section-card-body">
+                    {% for f in data.fundings %}
+                    <div class="timeline-item">
+                        <div class="timeline-org">{{ f.title or f.organization }}</div>
+                        <div class="timeline-role">
+                            {% if f.organization and f.title %}{{ f.organization }}{% endif %}
+                            {% if f.type %} · {{ f.type | replace('-', ' ') }}{% endif %}
+                        </div>
+                        {% if f.start_year %}
+                        <div class="timeline-dates">
+                            {{ f.start_year }}{% if f.end_year %} – {{ f.end_year }}{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Publications -->
+            <div class="section-card">
+                <div class="section-card-header">
+                    <h3>Publications</h3>
+                    <span class="tag tag-light">{{ data.works_count }}</span>
+                </div>
+                <div class="section-card-body">
+                    {% if data.works %}
+                    {% for work in data.works %}
+                    <div class="work-item">
+                        <div>
+                            <div class="work-title">
+                                {% if work.url %}
+                                <a href="{{ work.url }}" target="_blank">{{ work.title }} ↗</a>
+                                {% else %}
+                                {{ work.title }}
+                                {% endif %}
+                            </div>
+                            <div class="work-meta">
+                                {% if work.journal %}<span style="font-style:italic;">{{ work.journal }}</span>{% endif %}
+                                {% if work.doi %}<code style="font-size:.7rem;">{{ work.doi }}</code>{% endif %}
+                                {% if work.type %}<span class="type-badge">{{ work.type | replace('-', ' ') }}</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="work-year">{{ work.year }}</div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty">Aucune publication publique</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div><!-- /profil-grid -->
+
+    <div class="note-banner" style="margin-top:1.5rem;">
+        ℹ Les données affichées sont celles rendues <strong>publiques</strong> par le chercheur dans son profil ORCID.
+        Les courriels, adresses et identifiants marqués « limited » ou « private » ne sont pas accessibles via l'API publique.
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock %}
